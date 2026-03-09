@@ -582,12 +582,16 @@ st.dataframe(styled, use_container_width=True, height=420)
 
 st.markdown('<div class="section-title">Spatial Error Map</div>', unsafe_allow_html=True)
 
-OUTPUT_GPKG = "outputs/output_errors.gpkg"
+# Use sample GeoPackage if available (for cloud deployment),
+# otherwise fall back to full output_errors.gpkg (local run)
+SAMPLE_GPKG = "outputs/sample_errors.gpkg"
+FULL_GPKG   = "outputs/output_errors.gpkg"
+OUTPUT_GPKG = SAMPLE_GPKG if os.path.exists(SAMPLE_GPKG) else FULL_GPKG
 
 if not os.path.exists(OUTPUT_GPKG):
     st.markdown(
-        '<div class="warn-box">⚠️ No GeoPackage found at <code>outputs/output_errors.gpkg</code>. '
-        'Run <code>main.py</code> to generate error geometries.</div>',
+        '<div class="warn-box">⚠️ No GeoPackage found. '
+        'Run <code>main.py</code> then <code>generate_sample_gpkg.py</code> to generate error geometries.</div>',
         unsafe_allow_html=True,
     )
 else:
