@@ -1,0 +1,12 @@
+layer,total_errors,worst_severity,geometry_errors,overlap_errors,hierarchy_errors,attribute_errors,duplicate_errors,referential_errors
+U_CONSTRUCCION_CTM12,253708,critical,15,317,0,253376,0,0
+U_MANZANA_CTM12,2952,critical,13,40,0,2862,37,0
+U_TERRENO_CTM12,96798,critical,8,164,0,96578,48,0
+U_UNIDAD_CTM12,479974,critical,39,1648,0,478287,0,0
+construccion_fuera_terreno_pct,34277,critical,0,0,34277,0,0,0
+ref_construccion_sin_terreno,7125,critical,0,0,0,0,0,7125
+ref_terreno_sin_manzana,48289,critical,0,0,0,0,0,48289
+ref_unidad_sin_construccion,58589,critical,0,0,0,0,0,58589
+ref_unidad_sin_terreno,63802,critical,0,0,0,0,0,63802
+terreno_fuera_manzana_pct,48289,critical,0,0,48289,0,0,0
+unidad_fuera_construccion_pct,100864,critical,0,0,100864,0,0,0
