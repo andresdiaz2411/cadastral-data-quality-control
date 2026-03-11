@@ -3,7 +3,7 @@
 > **Automated QA/QC system for multipurpose cadastral data validation under the LADM-COL standard (IGAC). Detects geometry errors, spatial overlaps, attribute inconsistencies, and hierarchical violations across urban cadastral layers, with severity classification and an interactive Streamlit dashboard.**
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
-[![GeoPandas](https://img.shields.io/badge/GeoPandas-1.0+-green)](https://geopandas.org)
+[![GeoPandas](https://img.shields.io/badge/GeoPandas-1.0.0-green)](https://geopandas.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red?logo=streamlit)](https://cadastral-data-quality-control.streamlit.app/)
 [![LADM-COL](https://img.shields.io/badge/Standard-LADM--COL%20%7C%20CTM12-orange)](https://www.igac.gov.co)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
