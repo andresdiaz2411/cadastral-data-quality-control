@@ -1,470 +1,225 @@
-\# 🗺️ Cadastral Data Quality Control — LADM-COL / CTM12
+# 🗺️ Cadastral Data Quality Control — LADM-COL / CTM12
 
+> **Automated QA/QC system for multipurpose cadastral data validation under the LADM-COL standard (IGAC). Detects geometry errors, spatial overlaps, attribute inconsistencies, and hierarchical violations across urban cadastral layers, with severity classification and an interactive Streamlit dashboard.**
 
+[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
+[![GeoPandas](https://img.shields.io/badge/GeoPandas-1.0+-green)](https://geopandas.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red?logo=streamlit)](https://cadastral-data-quality-control.streamlit.app/)
+[![LADM-COL](https://img.shields.io/badge/Standard-LADM--COL%20%7C%20CTM12-orange)](https://www.igac.gov.co)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> \*\*Automated QA/QC system for multipurpose cadastral data validation under the LADM-COL standard (IGAC). Detects geometry errors, spatial overlaps, and hierarchical inconsistencies across urban cadastral layers, with severity classification and multi-format reporting.\*\*
-
-
-
-\[!\[Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
-
-\[!\[GeoPandas](https://img.shields.io/badge/GeoPandas-0.14-green)](https://geopandas.org)
-
-\[!\[LADM-COL](https://img.shields.io/badge/Standard-LADM--COL%20%7C%20CTM12-orange)](https://www.igac.gov.co)
-
-\[!\[Status](https://img.shields.io/badge/Status-Functional%20Prototype-yellow)]()
-
-\[!\[License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-
-
-> ⚠️ \*\*Work in progress\*\* — Streamlit dashboard under development. Console pipeline fully functional.
-
-
+🌐 **[Live Dashboard →](https://cadastral-data-quality-control.streamlit.app/)**
 
 ---
 
+## 📌 Overview
 
+This system automates the quality control process for urban cadastral datasets structured under the **LADM-COL model** as implemented by IGAC in the **CTM12 (Catastro Multipropósito)** framework. It validates the four core urban layers across five dimensions:
 
-\## 📌 Overview
+- **Geometry validation** — invalid, null, and empty geometries
+- **Overlap validation** — spatial intersections within each layer using adaptive thresholds
+- **Hierarchy validation** — spatial containment and percentage-based tolerance checks
+- **Attribute validation** — mandatory field nulls, format checks, and code consistency
+- **Duplicate validation** — duplicate feature detection per layer
 
-
-
-This system automates the quality control process for urban cadastral datasets structured under the \*\*LADM-COL model\*\* as implemented by IGAC in the \*\*CTM12 (Catastro Multipropósito)\*\* framework. It validates the four core urban layers across three dimensions:
-
-
-
-\- \*\*Geometry validation\*\* — invalid, null, and empty geometries
-
-\- \*\*Overlap validation\*\* — spatial intersections within each layer using adaptive thresholds
-
-\- \*\*Hierarchy validation\*\* — spatial containment and percentage-based tolerance checks across the cadastral hierarchy
-
-
-
-Errors are classified by severity (`leve`, `moderado`, `grave`) and exported as a GeoPackage for direct inspection in QGIS or ArcGIS, alongside a CSV summary report.
-
-
+Errors are classified by severity (`critical`, `moderate`, `low`) and visualized in an interactive Streamlit dashboard with spatial map, KPI cards, and filterable detail tables.
 
 ---
 
-
-
-\## 🏛️ LADM-COL Cadastral Hierarchy
-
-
+## 🏛️ LADM-COL Cadastral Hierarchy
 
 The system validates the following containment hierarchy, following IGAC's multipurpose cadastral model:
 
-
-
 ```
-
-U\_MANZANA\_CTM12
-
-&nbsp;   └── U\_TERRENO\_CTM12
-
-&nbsp;           └── U\_CONSTRUCCION\_CTM12
-
-&nbsp;                   └── U\_UNIDAD\_CTM12  (grouped by CONSTRUCCION\_CODIGO + PLANTA)
-
+U_MANZANA_CTM12
+    └── U_TERRENO_CTM12
+            └── U_CONSTRUCCION_CTM12
+                    └── U_UNIDAD_CTM12  (grouped by CONSTRUCCION_CODIGO + PLANTA)
 ```
-
-
 
 Each level must be spatially contained within its parent. Violations are reported with the percentage of area falling outside the parent polygon and classified by severity.
 
-
-
 ---
 
+## ✅ Validations Implemented
 
-
-\## ✅ Validations Implemented
-
-
-
-\### 1. Geometry Validation (`geometry\_validator.py`)
-
+### 1. Geometry Validation (`geometry_validator.py`)
 | Check | Description |
-
 |---|---|
+| Invalid geometries | Self-intersections, malformed rings, topologically invalid features |
+| Empty geometries | Null or zero-area features |
 
-| Invalid geometries | Detects self-intersections, malformed rings, and topologically invalid features |
-
-
-
-\### 2. Overlap Validation (`overlap\_validator.py` / `unit\_validator.py`)
-
+### 2. Overlap Validation (`overlap_validator.py` / `unit_validator.py`)
 | Check | Description |
-
 |---|---|
+| Intra-layer overlaps | Overlapping polygons within the same layer using STRtree spatial indexing |
+| Unit overlaps by floor | `U_UNIDAD` overlaps grouped by `CONSTRUCCION_CODIGO` + `PLANTA` — avoids false positives between floors |
+| Adaptive threshold | Overlap tolerance adjusts by project stage |
 
-| Intra-layer overlaps | Detects overlapping polygons within the same layer using spatial indexing (STRtree) |
-
-| Unit overlaps by construction | Validates overlaps between `U\_UNIDAD` features grouped by `CONSTRUCCION\_CODIGO` and `PLANTA` — avoids false positives between units on different floors |
-
-| Adaptive threshold | Overlap tolerance adjusts based on project stage (see configuration) |
-
-
-
-\### 3. Hierarchy Validation (`hierarchy\_validator.py`)
-
+### 3. Hierarchy Validation (`hierarchy_validator.py`)
 | Check | Description |
-
 |---|---|
+| Spatial containment | Each feature must fall within its parent layer union |
+| Percentage-based tolerance | Area outside parent calculated and classified by severity |
+| Referential integrity | Orphan detection across all hierarchy levels |
 
-| Hard containment check | Binary validation — feature must be fully `within()` its parent layer union |
+### 4. Attribute Validation (`attribute_validator.py`)
+| Check | Description |
+|---|---|
+| Mandatory null fields | Required fields with null values |
+| PLANTA format | Floor identifier format validation |
+| Code consistency | CONSTRUCCION_CODIGO referential checks |
 
-| Percentage-based tolerance | Calculates the percentage of each feature's area falling outside its parent, with severity classification |
+### 5. Duplicate Validation (`duplicate_validator.py`)
+| Check | Description |
+|---|---|
+| Duplicate geometries | Exact geometry duplicates per layer (excludes UNIDAD and CONSTRUCCION by design) |
 
-
-
-\### Severity Classification
-
+### Severity Classification
 | Severity | Threshold | Action |
-
 |---|---|---|
-
-| `leve` | ≤ 1% outside parent | Review — may be digitization tolerance |
-
-| `moderado` | 1% – 10% outside parent | Correction recommended |
-
-| `grave` | > 10% outside parent | Mandatory correction before delivery |
-
-
+| `low` | ≤ 1% outside parent | Review — may be digitization tolerance |
+| `moderate` | 1% – 10% outside parent | Correction recommended |
+| `critical` | > 10% outside parent | Mandatory correction before delivery |
 
 ---
 
-
-
-\## ⚙️ Project Stage Configuration
-
-
-
-The system adapts overlap thresholds to the current stage of the cadastral project:
-
-
+## ⚙️ Project Stage Configuration
 
 ```python
-
-\# main.py
-
-PROJECT\_STAGE = "initial"  # options: initial | preliminary | final
-
-
+# main.py
+PROJECT_STAGE = "initial"  # options: initial | preliminary | final
 
 thresholds = {
-
-&nbsp;   "initial":     0.10,   # 0.10 m² — permissive, early review
-
-&nbsp;   "preliminary": 0.02,   # 0.02 m² — intermediate cleanup
-
-&nbsp;   "final":       0.0001  # 0.0001 m² — strict, pre-delivery
-
+    "initial":     0.10,   # 0.10 m² — permissive, early review
+    "preliminary": 0.02,   # 0.02 m² — intermediate cleanup
+    "final":       0.0001  # 0.0001 m² — strict, pre-delivery
 }
-
 ```
-
-
-
-This reflects the real workflow of LADM-COL cadastral projects, where tolerance requirements tighten as the project approaches final delivery to IGAC.
-
-
 
 ---
 
-
-
-\## 📁 Repository Structure
-
-
+## 📁 Repository Structure
 
 ```
-
 cadastral-data-quality-control/
-
 │
-
-├── main.py                         # Main validation pipeline (console)
-
-├── filter\_layers.py                # Utility: list CTM12 layers from GeoPackage
-
-├── inspect\_layers.py               # Utility: inspect layer schema and geometry type
-
+├── main.py                     # Main validation pipeline (console)
+├── dashboard.py                # Streamlit interactive dashboard
+├── inspect_schema.py           # Utility: inspect layer schema
+├── generate_sample_gpkg.py     # Utility: generate synthetic sample data
 │
-
-├── validation\_engine/
-
-│   ├── geometry\_validator.py       # Invalid geometry detection
-
-│   ├── overlap\_validator.py        # Intra-layer overlap detection with spatial index
-
-│   ├── unit\_validator.py           # U\_UNIDAD overlap validation by construction + floor
-
-│   └── hierarchy\_validator.py      # Spatial containment and percentage-based checks
-
+├── geometry_validator.py       # Invalid geometry detection
+├── overlap_validator.py        # Intra-layer overlap detection
+├── unit_validator.py           # U_UNIDAD floor-level overlap validation
+├── hierarchy_validator.py      # Spatial containment + referential integrity
+├── attribute_validator.py      # Mandatory field and format validation
+├── duplicate_validator.py      # Duplicate geometry detection
+├── report_builder.py           # CSV + GeoPackage report generation
 │
-
-├── input\_data/                     # Input GeoPackage (not included — see Data section)
-
-├── outputs/                        # Validation outputs
-
-├── schema\_reference/               # LADM-COL schema reference documents
-
+├── outputs/
+│   ├── quality_report.csv      # Full error detail (layer, type, severity, geometry)
+│   ├── quality_summary.csv     # Aggregated counts per layer and category
+│   └── sample_errors.gpkg      # Sample error geometries for dashboard demo
 │
-
-├── output\_errors.gpkg              # Generated: error geometries per layer
-
-├── quality\_report.csv              # Generated: summary error counts per layer
-
+├── requirements.txt
 └── README.md
-
 ```
-
-
 
 ---
 
+## 🚀 How to Run
 
-
-\## 🚀 How to Run
-
-
-
-\### 1. Install dependencies
-
-
+### 1. Install dependencies
 
 ```bash
-
-pip install geopandas fiona pandas
-
+pip install -r requirements.txt
 ```
 
-
-
-\### 2. Add your input data
-
-
-
-Place your GeoPackage in the `input\_data/` folder:
-
-
-
-```
-
-input\_data/
-
-└── urban\_ctm12\_anonymized.gpkg
-
-```
-
-
-
-The GeoPackage must contain the following layers with CTM12-compliant schema:
-
-\- `U\_TERRENO\_CTM12`
-
-\- `U\_CONSTRUCCION\_CTM12`
-
-\- `U\_UNIDAD\_CTM12` (requires `CONSTRUCCION\_CODIGO` and `PLANTA` fields)
-
-\- `U\_MANZANA\_CTM12`
-
-
-
-\### 3. Configure project stage
-
-
-
-Edit `main.py`:
-
-
-
-```python
-
-PROJECT\_STAGE = "initial"  # initial | preliminary | final
-
-```
-
-
-
-\### 4. Run the pipeline
-
-
+### 2. Run the validation pipeline
 
 ```bash
-
 python main.py
-
 ```
 
+Outputs written to `outputs/`:
+- `quality_report.csv` — full error detail
+- `quality_summary.csv` — aggregated counts
+- `output_errors.gpkg` — error geometries for QGIS/ArcGIS
 
+### 3. Launch the dashboard
 
-\### 5. Review outputs
+```bash
+streamlit run dashboard.py
+```
 
+🔗 Or visit the **[live demo](https://cadastral-data-quality-control.streamlit.app/)**
 
+---
 
-| Output | Description |
+## 📊 Validation Results — Test Dataset
 
+Dataset: `urban_ctm12_anonymized.gpkg` | CRS: EPSG:3116 | Provisional migration data
+
+| Layer | Features |
 |---|---|
+| U_MANZANA_CTM12 | 2,861 |
+| U_TERRENO_CTM12 | 48,289 |
+| U_CONSTRUCCION_CTM12 | 63,344 |
+| U_UNIDAD_CTM12 | 159,420 |
 
-| `output\_errors.gpkg` | Error geometries — open in QGIS or ArcGIS for spatial review |
+| Category | Critical | Moderate | Low | Total |
+|---|---|---|---|---|
+| Geometry | 53 | 0 | 0 | 53 |
+| Duplicates | 0 | 85 | 0 | 85 |
+| Overlaps | 0 | 76,001 | 30,971 | 107,972 |
+| Hierarchy | 1,087,557 | 0 | 0 | 1,087,557 |
+| Attributes | 53 | 0 | 0 | 53 |
+| **Total** | **1,087,610** | **76,086** | **30,971** | **1,194,667** |
 
-| `quality\_report.csv` | Summary table: error counts per layer and validation type |
-
-
-
----
-
-
-
-\## 📊 Output Example
-
-
-
-```
-
-Loading U\_TERRENO\_CTM12...
-
-Loading U\_CONSTRUCCION\_CTM12...
-
-Loading U\_UNIDAD\_CTM12...
-
-Loading U\_MANZANA\_CTM12...
-
-
-
-Validating U\_TERRENO\_CTM12
-
-U\_TERRENO\_CTM12 → Invalid geometries: 3
-
-U\_TERRENO\_CTM12 → Overlaps > 0.1 m²: 7
-
-
-
-Validating U\_UNIDAD\_CTM12
-
-U\_UNIDAD\_CTM12 → Invalid geometries: 0
-
-U\_UNIDAD\_CTM12 → Overlaps > 0.1 m²: 12
-
-
-
-Hierarchy Validation
-
-unidad\_fuera\_pct: 5 cases
-
-construccion\_fuera\_pct: 2 cases
-
-terreno\_fuera\_pct: 0 cases
-
-
-
-Quality report exported as quality\_report.csv
-
-Validation process completed successfully.
-
-```
-
-
+> Note: high hierarchy error counts reflect null `MANZANA_CODIGO` values typical of provisional migration datasets — not indicative of production data quality.
 
 ---
 
-
-
-\## 🗂️ Data
-
-
-
-Input data is not included in this repository to protect cadastral information. The system was developed and tested using \*\*anonymized urban cadastral datasets\*\* following the CTM12 schema from IGAC's multipurpose cadastral program.
-
-
-
-To run the system with your own data, your GeoPackage must follow the LADM-COL field naming conventions as specified in the \[IGAC CTM12 technical guide](https://www.igac.gov.co).
-
-
-
-> 📌 Sample synthetic data for testing purposes is planned for a future release.
-
-
-
----
-
-
-
-\## 🔧 Tech Stack
-
-
+## 🔧 Tech Stack
 
 | Category | Tools |
-
 |---|---|
-
-| Spatial processing | GeoPandas, Fiona, Shapely |
-
+| Spatial processing | GeoPandas, Shapely, Fiona |
 | Cadastral standard | LADM-COL / CTM12 (IGAC) |
-
+| Coordinate system | MAGNA-SIRGAS / Colombia Bogotá (EPSG:3116) |
 | Input format | GeoPackage (.gpkg) |
-
 | Output formats | GeoPackage (.gpkg), CSV |
-
-| Interface | Console (current) · Streamlit (in development) |
-
-
+| Dashboard | Streamlit, Plotly |
+| Deployment | Streamlit Cloud |
 
 ---
 
+## 🗺️ Roadmap
 
-
-\## 🗺️ Roadmap
-
-
-
-\- \[x] Geometry validation
-
-\- \[x] Intra-layer overlap detection with spatial indexing
-
-\- \[x] Hierarchical containment validation (hard + percentage-based)
-
-\- \[x] Severity classification (leve / moderado / grave)
-
-\- \[x] GeoPackage + CSV export
-
-\- \[ ] Attribute validation (field format, null checks, code consistency)
-
-\- \[ ] Synthetic sample dataset for reproducibility
-
-\- \[ ] Streamlit dashboard with interactive error map
-
-\- \[ ] HTML report generation
-
-
+- [x] Geometry validation
+- [x] Intra-layer overlap detection with spatial indexing
+- [x] Floor-level U_UNIDAD overlap validation
+- [x] Hierarchical containment validation (hard + percentage-based)
+- [x] Referential integrity checks
+- [x] Attribute and format validation
+- [x] Duplicate detection
+- [x] Severity classification (critical / moderate / low)
+- [x] GeoPackage + CSV export
+- [x] Streamlit dashboard with KPI cards, charts, spatial map
+- [ ] HTML report generation
+- [ ] Synthetic sample dataset for full reproducibility
 
 ---
 
+## 👤 Author
 
-
-\## 👤 Author
-
-
-
-\*\*German Andrés Diaz Gelves\*\*
-
-GIS \& Spatial Data Analyst | Cadastral QA/QC | LADM-COL
-
-
+**German Andrés Diaz Gelves**
+GIS & Spatial Data Analyst | Cadastral QA/QC | LADM-COL
 
 5+ years of experience in cadastral projects with IGAC, Catastro Distrital, and multipurpose cadastral programs across Colombia.
 
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://linkedin.com/in/adiaz96/)
+[![Email](https://img.shields.io/badge/Email-Contact-red?logo=gmail)](mailto:andresdgel96@gmail.com)
 
-
-\[!\[LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?logo=linkedin)](https://linkedin.com/in/adiaz96/)
-
-\[!\[Email](https://img.shields.io/badge/Email-Contact-red?logo=gmail)](mailto:andresdgel96@gmail.com)
-
-
-
-\*Open to remote opportunities in GIS analysis, cadastral data management, and geospatial quality control.\*
-
+*Open to remote opportunities in GIS analysis, cadastral data management, and geospatial quality control.*
